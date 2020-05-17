@@ -1,0 +1,11 @@
+# node packages
+node_modules
+
+# environment variable
+*.env
+
+# linter config
+.eslintrc.json
+
+# editor settings
+.vscode
