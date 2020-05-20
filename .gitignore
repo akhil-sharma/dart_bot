@@ -1,11 +1,18 @@
 # node packages
 node_modules
+.package.json.swp
+
+# modified node modules
+Discord.js
 
 # environment variable
-*.env
+.env.*
 
 # linter config
 .eslintrc.json
 
 # editor settings
 .vscode
+
+# ssh keys
+*.pem

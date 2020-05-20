@@ -1,4 +1,15 @@
-require('dotenv').config();
+if(process.env.NODE_ENV !== `development` &&
+    process.env.NODE_ENV !== `production`)
+{
+    console.log('Please specify one of the following environments to run your server');
+    console.log('- development');
+    console.log('- production');
+}
+
+require('dotenv-flow').config();
+
+const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
+const PREFIX = process.env.PREFIX;
 
 const Discord = require('discord.js');
 const utils = require('./utils');
@@ -8,10 +19,7 @@ bot.commands = new Discord.Collection();
 bot.serverQueue = new Map();
 bot.cooldowns = new Discord.Collection();
 
-const TOKEN = process.env.TOKEN;
-const PREFIX = process.env.PREFIX;
-
-bot.login(TOKEN);
+bot.login(DISCORD_TOKEN);
 
 const commandFiles = utils.getAllFiles('./commands');
 
@@ -21,15 +29,15 @@ for (const file of commandFiles) {
 }
 
 bot.once('ready', () => {
-  console.info(`Logged in as ${bot.user.tag}!`);
+    console.info(`Logged in as ${bot.user.tag}!`);
 });
 
-bot.once('reconnecting', () => {
-	console.info(`${bot.user.tag} is trying to reconnect!`);
+bot.on('shardReconnecting', (id) => {
+	console.info(`${id} trying to reconnect!`);
 });
 
-bot.once('disconnect', () => {
-	console.info(`${bot.user.tag} disconnected!`);
+bot.on('shardDisconnect', (event, s) => {
+	console.info(`${event} :: shardDisconnect :: ${s}`);
 });
 
 bot.on('message', async (message)=>{
@@ -39,10 +47,17 @@ bot.on('message', async (message)=>{
     const args = message.content.slice(PREFIX.length).split(/ +/);
     const commandName = args.shift().toLowerCase();
     
-    if (!bot.commands.has(commandName)) return;
+    const command = bot.commands.get(commandName)
+		|| bot.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
 
-    const command = bot.commands.get(commandName);
+	if (!command) return;
 
+    //Check for guildOnly commands.
+    if (command.guildOnly && message.channel.type !== 'text') {
+        return message.reply('I can\'t execute that command inside DMs!');
+    }
+
+    //Check for args.
     if(command.args && !args.length){
         let reply = (`You didn't provide any arguments, ${message.author}!`);
 

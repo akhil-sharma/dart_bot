@@ -48,7 +48,7 @@ const generateEmbed = (weatherData) => {
             {name: `Humidity`, value: `${humidity}%`, inline: true},
             {name: `Pressure`, value: `${pressure} hpa`, inline: true},
         )
-        .addField(`Wind Speed`, `${speed} m/s ${getWindDirection(deg)} ${deg}`)
+        .addField(`Wind Speed`, `${speed} m/s ${getWindDirection(deg)} ${deg}°`)
         .addField('\u200B', '\u200B' )
         .setTimestamp()
         .setFooter(`Created for ${createdFor}`);
