@@ -1,6 +1,12 @@
 const axios = require('axios');
 const Discord = require('discord.js');
 
+const logging = require(`../utils/logging`);
+const handlerInfo = {
+    commandModule: 'weather',
+    commandHandler: 'weather'
+};
+
 const WEATHER_API_KEY = process.env.WEATHER_API_KEY;
 
 const buildWeatherUrl = (cityName) => {
@@ -48,7 +54,7 @@ const generateEmbed = (weatherData) => {
             {name: `Humidity`, value: `${humidity}%`, inline: true},
             {name: `Pressure`, value: `${pressure} hpa`, inline: true},
         )
-        .addField(`Wind Speed`, `${speed} m/s ${getWindDirection(deg)} ${deg}`)
+        .addField(`Wind Speed`, `${speed} m/s ${getWindDirection(deg)} ${deg}°`)
         .addField('\u200B', '\u200B' )
         .setTimestamp()
         .setFooter(`Created for ${createdFor}`);
@@ -63,6 +69,7 @@ module.exports = {
     usage: '<city>',
     description: `This command gives sends weather details of a given location`,
     async execute(message, args){
+        logging.trace(handlerInfo, {EVENT: `\`weather\` command fired with args :: &{args}`});
         try {
             let cityName = args.join(' ');
 

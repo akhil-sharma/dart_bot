@@ -1,11 +1,12 @@
 # node packages
 node_modules
+.package.json.swp
 
-# environment variable
-*.env
-
-# linter config
-.eslintrc.json
+# environment variables
+.env.*
 
 # editor settings
 .vscode
+
+# ssh keys
+*.pem

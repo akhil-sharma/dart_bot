@@ -1,26 +1,48 @@
+const { MessageEmbed } = require('discord.js');
+
+const logging = require(`../../utils/logging`);
+const handlerInfo = {
+    commandModule: 'music',
+    commandHandler: 'playlist'
+};
+
 module.exports = {
     name: `playlist`,
-    description: `Display the list of songs in the queue.`,
+    description: `Display the list of next 10 songs in the queue.`,
+    guildOnly: true,
+    aliases: [`upcoming`],
     execute (message){
-        console.log(message.member.voice.channel);
-        
+        logging.trace(handlerInfo, {EVENT: `\`playlist\` command fired :: `});
         const serverQueue = message.client.serverQueue;
         const guildSongQueue = serverQueue.get(message.guild.id);
 
-        if(!guildSongQueue){return }
+        if(!guildSongQueue){
+            return message.channel.send(`Nothing to show...`);
+        }
         
+        if(guildSongQueue.songs.length === 0){
+            return message.channel.send(`There are no songs in the queue.`)
+        }
         message.channel.send(formatPlaylist(guildSongQueue.songs));
     }
 }
 
 const formatPlaylist = (playlistArray) => {
-    let playlistString = 
-    `Playlist\n-------------------\n`;
-    let count = 1;
-
-    playlistArray.forEach(song => {
-        playlistString += `${count}   -  ${song.title}\n`;
-        count += 1;
+    const limitedArray = playlistArray.slice(0, 15).map(song => {
+        return {
+            title: song.title,
+            duration: song.duration,
+        }
     });
-    return playlistString;
+
+    const queueEmbed = new MessageEmbed()
+        .setColor('#ff7373')
+        .setTitle('Upcoming Songs');
+    let counter = 1;
+    limitedArray.forEach(song => {
+        queueEmbed.addField(`${counter}:`, `${song.title} : ${song.duration}`);
+        counter += 1;
+    });
+
+    return queueEmbed;
 }

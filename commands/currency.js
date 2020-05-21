@@ -1,80 +1,89 @@
 const axios = require('axios');
-
-const allowedCurrencies = {
-    CAD: "CAD",
-    HKD: "HKD",
-    ISK: "ISK",
-    PHP: "PHP",
-    DKK: "DKK",
-    HUF: "HUF",
-    CZK: "CZK",
-    GBP: "GBP",
-    RON: "RON",
-    SEK: "SEK",
-    IDR: "IDR",
-    INR: "INR",
-    BRL: "BRL",
-    RUB: "RUB",
-    HRK: "HRK",
-    JPY: "JPY",
-    THB: "THB",
-    CHF: "CHF",
-    EUR: "EUR",
-    MYR: "MYR",
-    BGN: "BGN",
-    TRY: "TRY",
-    CNY: "CNY",
-    NOK: "NOK",
-    NZD: "NZD",
-    ZAR: "ZAR",
-    USD: "USD",
-    MXN: "MXN",
-    SGD: "SGD",
-    AUD: "AUD",
-    ILS: "ILS",
-    KRW: "KRW",
-    PLN: "PLN" 
+const constants =  require('../utils/constants');
+const commonFunctions = require('../utils/common_functions');
+const logging = require('../utils/logging');
+const handlerInfo = {
+    commandModule: 'currency',
+    commandHandler: 'currency'
 };
 
-const buildCurrencyUrl = (baseCurrency, newCurrency) => {
-    return `https://api.exchangeratesapi.io/latest?base=${baseCurrency}&symbols=${baseCurrency},${newCurrency}`;
+const currencyApiKey = process.env.FIXER_CURRENCY_API_KEY;
+
+const buildCurrencyConversionUrl = (baseCurrency, newCurrency) => {
+    return `http://data.fixer.io/api/latest?access_key=${currencyApiKey}&symbols=${baseCurrency},${newCurrency}`;
 }
 
-const formatCurrencyData = (currencyData, newCurrency, value) => {
-    let { rates, base, date } = currencyData;
-
-    let baseString = `${value} ${base}  =  ${(value * rates[newCurrency]).toFixed(2)} ${newCurrency}\n\nFor ${date}`;
-
-    return baseString;
+const formatCurrencyData = (currencyData, baseCurrency, newCurrency, amount) => {
+    let returnString = null;
+    if(currencyData.success === true){
+        let { timestamp, date, rates } = currencyData;
+        const result = amount * (rates[newCurrency] / rates[baseCurrency]);
+        returnString = `${amount} ${baseCurrency}  =  ${result} ${newCurrency}\n\nFor ${commonFunctions.convertSecondsToTimeString(timestamp)} UTC on ${date}`;
+    
+    }else{
+        returnString = `I am unable to fetch this data at the given moment...`;
+    }
+    
+    return returnString;
 }
 
 module.exports = {
-    name: 'currency',
-    description: 'This command gives the excange rate of various currencies based on the base currency.',
-    cooldown: 3,
+    name: `currency`,
+    description: `This command converts any amount from one currency to another.`,
+    cooldown: 4,
     args: true,
-    usage: '<value> <base-currency-symbol> <new-currency-symbol> - eg: !currency 100 USD INR',
+    aliases: ['price'],
+    usage: `<amount> <currency-symbol> <currency-symbol> (for currency conversion) or
+    !currency <currency-symbol> (for the full form)`,
     async execute(message, args){
+        logging.trace(handlerInfo, {EVENT: `Fired \`currency\` command with args :: ${args}`});
         try{
-            if(args.length !== 3){
-                return message.channel.send("Invalid command format.")
+            let baseCurrencySymbol = null;
+            let newCurrencySymbol = null;
+            let amount = 1;
+            let responseString = ``;
+            let sentMessage = null;
+            let currencyString = null;
+            switch (args.length){
+                case 1:
+                    baseCurrencySymbol = args[0].toUpperCase();
+                    currencyString = constants.allowedCurrencySymbols[baseCurrencySymbol];
+                    responseString = currencyString ? currencyString : `I don't recognize ${baseCurrencySymbol}... try another?`;
+                    return message.reply(responseString);
+
+                case 2:
+                    baseCurrencySymbol = args[0].toUpperCase();
+                    newCurrencySymbol = args[1].toUpperCase();
+                    break;
+
+                case 3:
+                    amount = parseInt(args[0]);
+                    baseCurrencySymbol = args[1].toUpperCase();
+                    newCurrencySymbol = args[2].toUpperCase();
+                    break;
+                
+                default:
+                    responseString = `Invalid arguments. 
+                    Try \`!currency <amount> <currency-symbol> <currency-symbol>\`
+                    or  \`!currency <currency-symbol> <currency-symbol>\` (for currency conversion) 
+                    and
+                    \`!currency <currency-symbol>\` (for the full form)`;
+                    sentMessage = await message.reply(responseString);
+                    return commonFunctions.clearInvalidCommand(message, sentMessage);
             }
 
-            const value = parseInt(args[0]) || 1;
-            const baseCurrencySymbol = args[1].toUpperCase();
-            const newCurrencySymbol = args[2].toUpperCase();
-
-            if(allowedCurrencies[baseCurrencySymbol] && allowedCurrencies[newCurrencySymbol]){
-                const response = await axios.get(buildCurrencyUrl(baseCurrencySymbol, newCurrencySymbol));
-                const formattedCurrencyData = formatCurrencyData(response.data, newCurrencySymbol, value);
-    
-                return message.channel.send(formattedCurrencyData);
+            if(!constants.allowedCurrencySymbols[baseCurrencySymbol] || !constants.allowedCurrencySymbols[newCurrencySymbol]){
+                return message.reply("I don't recognize one of the currency symbols... try another?");
             }
 
-            return message.channel.send("I don't recognize one of the currency symbols... try another?");
-
-        } catch(error ){
-            message.channel.send(`${error.response.data.error}`);
+            const currencyConversionUrl = buildCurrencyConversionUrl(baseCurrencySymbol, newCurrencySymbol);
+            const response = await axios.get(currencyConversionUrl);
+            responseString = formatCurrencyData(response.data, baseCurrencySymbol, newCurrencySymbol, amount);
+            return message.reply(responseString);
+            
+        } catch(error){
+            logging.error(handlerInfo, {EVENT: `Encountered error in \`currency\` command.`}, {ERROR: error});
+            message.reply(`I am unable to fetch this data...`);
         }
     }
 }

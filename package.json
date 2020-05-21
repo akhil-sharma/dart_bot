@@ -17,10 +17,12 @@
     "@discordjs/opus": "^0.3.2",
     "axios": "^0.19.2",
     "discord.js": "^12.2.0",
-    "dotenv": "^8.2.0",
+    "dotenv-flow": "^3.1.0",
+    "simple-youtube-api": "^5.2.1",
     "ytdl-core-discord": "^1.2.0"
   },
   "devDependencies": {
-    "eslint": "^7.0.0"
+    "eslint": "^7.0.0",
+    "eslint-plugin-prettier": "^3.1.3"
   }
 }
