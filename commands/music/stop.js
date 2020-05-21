@@ -19,7 +19,7 @@ module.exports = {
         const serverQueue = message.client.serverQueue;
         const guildSongQueue = serverQueue.get(message.guild.id);
         
-        if (typeof guildSongQueue == undefined || !guildSongQueue.dispatcher) {
+        if (!guildSongQueue || !guildSongQueue.dispatcher) {
             return message.channel.send(`No song is playing at the moment...`);
         }
 
