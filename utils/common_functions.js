@@ -32,6 +32,11 @@ const formatSongDuration = (durationObject) => {
     return duration;
 }
 
+const clearInvalidCommand = (msg, sentMsg, msgTimeout=6000, sentTimeout=10000) => {
+    msg.delete({timeout: msgTimeout});
+    sentMsg.delete({timeout: sentTimeout});
+}
+
 const convertSecondsToTimeString = (seconds) => {
     return new Date(seconds * 1e3).toISOString().slice(-13, -5);
 }
@@ -39,5 +44,6 @@ const convertSecondsToTimeString = (seconds) => {
 module.exports = {
     getAllFiles,
     convertSecondsToTimeString,
-    formatSongDuration
+    formatSongDuration,
+    clearInvalidCommand
 }

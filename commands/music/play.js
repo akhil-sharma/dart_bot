@@ -5,8 +5,8 @@ const { MessageEmbed } = require('discord.js');
 const Youtube = require('simple-youtube-api');
 const youtube = new Youtube(YOUTUBE_API_KEY);
 
-const utils = require('../../utils');
-const logging = require('../../logging');
+const commonFunctions = require('../../utils/common_functions');
+const logging = require(`../../utils/logging`);
 const handlerInfo = {
     commandModule: 'music',
     commandHandler: 'play'
@@ -163,10 +163,11 @@ module.exports = {
                     voiceChannel: voiceChannel,
                     connection: null,
                     songs: [],
-                    volume: 5,
+                    volume: 50,
                     playing: false,
                     nowPlaying: null,
-                    dispatcher: null
+                    dispatcher: null,
+                    looping: false
                 };
 
                 serverQueue.set(message.guild.id, queueConstruct);
@@ -209,7 +210,7 @@ module.exports = {
 }
 
 const createSongObject = (video, voiceChannel) => {
-    let duration = utils.formatSongDuration(video.duration);
+    let duration = commonFunctions.formatSongDuration(video.duration);
     if (duration == '00:00') duration = 'Live Stream';
     return {
         url: `https://www.youtube.com/watch?v=${video.raw.id}`,
@@ -232,12 +233,13 @@ const play = async (message, song) => {
         const dispatcher = guildSongQueue.connection.play(await ytdl(song.url), {
             type: 'opus', 
             quality: 'highestaudio', 
-            //highWaterMark: 1024 * 1024 * 10 //pre save 0.5 mb of audio modified the baseplayer ffmpeg arguments instead
+            highWaterMark: 50, //pre save 50 voice packets >> in case of failure the baseplayer ffmpeg arguments instead
+            bitrate: 192000
         });
         
         dispatcher.on('start', () => {
             logging.trace(handlerInfo, {EVENT: `Fired \`start\` for ${guildSongQueue.songs[0].title}`});
-            dispatcher.setVolumeLogarithmic(guildSongQueue.volume/10);
+            dispatcher.setVolumeLogarithmic(guildSongQueue.volume / 100);
             guildSongQueue.dispatcher = dispatcher;
             
             const videoEmbed = new MessageEmbed()
@@ -249,22 +251,32 @@ const play = async (message, song) => {
 
             guildSongQueue.playing = true;
             guildSongQueue.nowPlaying = guildSongQueue.songs[0];
+
             return message.channel.send(videoEmbed);
         });
         
         dispatcher.on('finish', () => {
-            logging.trace(handlerInfo, {EVENT: `Fired \`finish\` for ${guildSongQueue.nowPlaying.title}`});
+            logging.trace(handlerInfo, {EVENT: `Fired \`finish\` for ${guildSongQueue.nowPlaying ? guildSongQueue.nowPlaying.title : `null_song`}`});
             guildSongQueue.playing = false;
             guildSongQueue.nowPlaying = null;
-            guildSongQueue.dispatcher.destroy()
+            if(guildSongQueue.dispatcher){
+                guildSongQueue.dispatcher.destroy()
+            }
 
-            if(guildSongQueue.songs[1]){
+            if(guildSongQueue.looping){
+                //Add current song to the end of queue
+                let lastSong = guildSongQueue.songs.shift();
+                guildSongQueue.songs.push(lastSong);
+                return play(message, guildSongQueue.songs[0]);
+            }
+            else if(guildSongQueue.songs[1]){
                 guildSongQueue.songs.shift();
                 return play(message, guildSongQueue.songs[0]);
             
             }else{
                 guildSongQueue.voiceChannel.leave();
-                return serverQueue.delete(message.guild.id);
+                serverQueue.delete(message.guild.id);
+                return message.channel.send(`No more songs left to play...`);
             }
         });
 
@@ -280,7 +292,9 @@ const play = async (message, song) => {
 
     } catch (err) {
         logging.error(handlerInfo, {EVENT: `Caught error in \`play\` method.`}, {ERROR: err});
-        guildSongQueue.voiceChannel.leave();
+        if(guildSongQueue && guildSongQueue.voiceChannel){
+            guildSongQueue.voiceChannel.leave();
+        }
         return serverQueue.delete(message.guild.id);
     }
 

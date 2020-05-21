@@ -1,4 +1,4 @@
-const logging = require(`../../logging`);
+const logging = require(`../../utils/logging`);
 const handlerInfo = {
     commandModule: 'music',
     commandHandler: 'pause'
@@ -20,11 +20,13 @@ module.exports = {
         const serverQueue = message.client.serverQueue;
         const guildSongQueue = serverQueue.get(message.guild.id);
         
-        if (!guildSongQueue) {
+        if (!guildSongQueue ) {
             return message.channel.send(`No song is playing at the moment...`);
         }
 
-        guildSongQueue.connection.dispatcher.pause();
-        message.channel.send(`${guildSongQueue.nowPlaying.title} ## paused ##`);
+        if(guildSongQueue.dispatcher && !guildSongQueue.dispatcher.paused){
+            guildSongQueue.connection.dispatcher.pause();
+            message.channel.send(`${guildSongQueue.nowPlaying.title} ## paused ##`);
+        }
     }
 }

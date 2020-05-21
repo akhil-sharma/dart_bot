@@ -1,5 +1,11 @@
 const axios = require('axios');
 
+const logging = require('../../utils/logging');
+const handlerInfo = {
+    commandModule: 'fun',
+    commandHandler: 'joke'
+};
+
 const buildJokesUrl = (stringArg) => {
     let jokesUrl = `https://sv443.net/jokeapi/v2/joke/Any?type=single`;
             
@@ -15,6 +21,7 @@ module.exports = {
     description: 'This command generates a random joke.',
     cooldown: 5,
     async execute(message, args){
+        logging.trace(handlerInfo, {EVENT: `Fired \`joke\` command.`});
         try{
             let jokesUrl = buildJokesUrl(args);
             let response = await axios.get(jokesUrl);

@@ -28,31 +28,34 @@ var debuggingPermissions = {
         pause    : true,
         skip     : true,
         playlist : true,
-        resume   : true
+        resume   : true,
+        volume   : true,
+        stop     : true,
+        loop     : true
     },
 
-    joke : {
+    fun : {
 
-        loggingEnabled              : false,
+        loggingEnabled              : true,
         defaultLoggingLevel         : levels.trace,
 
-        joke : false
+        joke : true
     },
 
     weather : {
 
-        loggingEnabled              : false,
+        loggingEnabled              : true,
         defaultLoggingLevel         : levels.trace,
 
-        weather : false
+        weather : true
     },
 
     currency : {
 
-        loggingEnabled              : false,
+        loggingEnabled              : true,
         defaultLoggingLevel         : levels.trace,
 
-        currency : false
+        currency : true
     }
 };
 

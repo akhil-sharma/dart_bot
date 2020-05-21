@@ -1,6 +1,6 @@
 const { MessageEmbed } = require('discord.js');
 
-const logging = require('../../logging');
+const logging = require(`../../utils/logging`);
 const handlerInfo = {
     commandModule: 'music',
     commandHandler: 'playlist'
@@ -10,7 +10,7 @@ module.exports = {
     name: `playlist`,
     description: `Display the list of next 10 songs in the queue.`,
     guildOnly: true,
-    aliases: [`song-list`, `next`, `next-song`],
+    aliases: [`upcoming`],
     execute (message){
         logging.trace(handlerInfo, {EVENT: `\`playlist\` command fired :: `});
         const serverQueue = message.client.serverQueue;

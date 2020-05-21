@@ -1,4 +1,4 @@
-const logging = require('../../logging');
+const logging = require(`../../utils/logging`);
 const handlerInfo = {
     commandModule: 'music',
     commandHandler: 'skip'
@@ -6,9 +6,8 @@ const handlerInfo = {
 
 module.exports = {
     name: `skip`,
-    description: `Skip the current song. Note: skip will not work if a song is paused.`,
+    description: `Skip the current song.`,
     guildOnly: true,
-    usage: ``,
     execute (message){
         logging.trace(handlerInfo, {EVENT: `\`skip\` command fired`});
 
@@ -19,11 +18,17 @@ module.exports = {
         const serverQueue = message.client.serverQueue;
         const guildSongQueue = serverQueue.get(message.guild.id);
         
-        if (typeof guildSongQueue == undefined || guildSongQueue.dispatcher.paused) {
-            return message.channel.send(`No song is playing at the moment...`);
+        if (!guildSongQueue || !guildSongQueue.dispatcher){
+            return message.reply(`No song is playing...`);
+        }
+        
+        if(guildSongQueue.dispatcher.paused) {
+            //resume the paused song first
+            //guildSongQueue.dispatcher.resume();
+            return message.reply(`No song is playing...`);
         }
 
+        message.channel.send(`*skipping* ~ ${guildSongQueue.nowPlaying.title}`);
         guildSongQueue.connection.dispatcher.end();
-        message.channel.send(`${guildSongQueue.nowPlaying.title} ## skipping ##`);
     }
 }

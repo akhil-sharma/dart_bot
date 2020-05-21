@@ -2,14 +2,8 @@
 node_modules
 .package.json.swp
 
-# modified node modules
-Discord.js
-
-# environment variable
+# environment variables
 .env.*
-
-# linter config
-.eslintrc.json
 
 # editor settings
 .vscode

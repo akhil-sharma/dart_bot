@@ -12,7 +12,7 @@ const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const PREFIX = process.env.PREFIX;
 
 const Discord = require('discord.js');
-const utils = require('./utils');
+const commonFunctions = require('./utils/common_functions');
 
 const bot = new Discord.Client();
 bot.commands = new Discord.Collection();
@@ -21,7 +21,7 @@ bot.cooldowns = new Discord.Collection();
 
 bot.login(DISCORD_TOKEN);
 
-const commandFiles = utils.getAllFiles('./commands');
+const commandFiles = commonFunctions.getAllFiles('./commands');
 
 for (const file of commandFiles) {
 	const command = require(`${file}`);
