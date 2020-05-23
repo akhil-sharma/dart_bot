@@ -20,7 +20,7 @@
 | `!playlist`| Display the current playlst | `!playlist` | `!upcoming` |
 | `!skip`    | Skip the current song. |`!skip` | -- |
 | `!volume`  | Change the volume of the current song. | `!volume <number 0-100>` | `!vol` |
-| `!stop`    | Stop all songs and clear the playlist.
+| `!stop`    | Stop all songs and clear the playlist. | `!stop` |
 | `!loop`    | Toggle a loop on the current playlist. | `!loop` | -- |
 
 
