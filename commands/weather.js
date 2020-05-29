@@ -7,10 +7,13 @@ const handlerInfo = {
     commandHandler: 'weather'
 };
 
-const WEATHER_API_KEY = process.env.WEATHER_API_KEY;
+const WEATHER_API_KEY = process.env.NEW_WEATHER_API_KEY;
 
 const buildWeatherUrl = (cityName) => {
-    return `http://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${WEATHER_API_KEY}&units=metric`;
+    //http://api.openweathermap.org/data/2.5/forecast?q=chandigarh&appid=c0ddb969d76625d760f8a421d218d230&units=metric
+    //http://api.openweathermap.org/data/2.5/forecast?q=chandigarh&appid=c0ddb969d76625d760f8a421d218d230&units=metric
+    return `http://api.openweathermap.org/data/2.5/forecast?q=${cityName}&appid=${WEATHER_API_KEY}&units=metric`
+    //return `http://api.openweathermap.org/data/2.5/weather?q=${cityName}&appid=${WEATHER_API_KEY}&units=metric`;
 }
 
 const buildWeatherIconUrl = (iconId) => {
@@ -28,6 +31,36 @@ const getWindDirection = (angle) => {
     let compassDirection = directionsArray[index];
 
     return compassDirection ? compassDirection : ''; 
+}
+
+const newGenerateEmbed = (weatherData) => {
+    let {   
+        city: {name, sunrise, sunset},
+        list,
+        createdFor
+    } = weatherData;
+
+    let [weatherNow, weatherPlusThree, weatherPlusSix] = list;
+
+    let weatherEmbed = new Discord.MessageEmbed()
+        .setColor('#0099ff')
+        .setTitle(`${weatherNow.weather[0].main}, ${weatherNow.main.temp}°C`)
+        .setURL(`${buildCityUrl(name)}`)
+        .setAuthor(`${name}`)
+        .setDescription(`${weatherNow.weather[0].description}`)
+        .setThumbnail(`${buildWeatherIconUrl(weatherNow.weather[0].icon)}`)
+        .addField(`Range`, `\u2193 ${weatherNow.main.temp_min}°C  \u200B \u200B \u200B \u200B \u2191 ${weatherNow.main.temp_max}°C`)
+        .addFields(
+            {name: `Feels Like`, value: `${weatherNow.main.feels_like}°C`, inline: true},
+            {name: `Humidity`, value: `${weatherNow.main.humidity}%`, inline: true},
+            {name: `Pressure`, value: `${weatherNow.main.pressure} hpa`, inline: true},
+        )
+        .addField(`Wind Speed`, `${weatherNow.wind.speed} m/s ${getWindDirection(weatherNow.wind.deg)} ${weatherNow.wind.deg}°`)
+        .addField('\u200B', '\u200B' )
+        .setTimestamp()
+        .setFooter(`Created for ${createdFor}`);
+    
+    return weatherEmbed;
 }
 
 const generateEmbed = (weatherData) => {
@@ -75,8 +108,8 @@ module.exports = {
 
             let weatherUrl = buildWeatherUrl(cityName);
             let weatherResponse = await axios.get(weatherUrl);
-            let weatherData = generateEmbed({...weatherResponse.data, createdFor: message.author.username});
-
+            // let weatherData = generateEmbed({...weatherResponse.data, createdFor: message.author.username});
+            let weatherData = newGenerateEmbed({...weatherResponse.data, createdFor: message.author.username});
             message.channel.send(weatherData);
 
         } catch (error) {
