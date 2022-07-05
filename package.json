@@ -14,7 +14,7 @@
   "author": "Akhil Sharma",
   "license": "MIT",
   "dependencies": {
-    "@discordjs/opus": "^0.3.2",
+    "@discordjs/opus": "^0.8.0",
     "axios": "^0.21.2",
     "discord.js": "^12.2.0",
     "dotenv-flow": "^3.1.0",
