@@ -1,5 +1,5 @@
 const axios = require('axios');
-
+const { SlashCommandBuilder } = require('discord.js')
 const logging = require('../../utils/logging');
 const handlerInfo = {
     commandModule: 'fun',
@@ -10,31 +10,36 @@ const buildJokesUrl = (stringArg) => {
     let jokesUrl = `https://sv443.net/jokeapi/v2/joke/Any?type=single`;
             
     if(stringArg.length){
-        jokesUrl += `&contains=${stringArg[0]}`;
+        jokesUrl += `&contains=${stringArg}`;
     }
-
+    console.log(jokesUrl)
     return jokesUrl;
 }
 
 module.exports = {
-    name: 'joke',
-    description: 'This command generates a random joke.',
+    data: new SlashCommandBuilder()
+        .setName('joke')
+        .setDescription('This command generates a random joke.')
+        .addStringOption(option => 
+            option.setName("contains")
+                .setDescription("try fetching jokes which contains the following string")
+        ),
     cooldown: 5,
-    async execute(message, args){
+    async execute(interaction) {
         logging.trace(handlerInfo, {EVENT: `Fired \`joke\` command.`});
+        let jokeResponse = '¯\\_(ツ)_/¯';
         try{
-            let jokesUrl = buildJokesUrl(args);
+            const contains = interaction.options.getString('contains') ?? "";
+            let jokesUrl = buildJokesUrl(contains);
             let response = await axios.get(jokesUrl);
             let joke = response.data.joke;
-            
             if(joke){
-                message.channel.send(joke);
-            }else{
-                message.channel.send('¯\\_(ツ)_/¯');
+                jokeResponse = joke
             }
 
         } catch(error ){
-            message.channel.send(`Don't know...`);
+            logging.error(handlerInfo, {EVENT: `error when fetching jokes`}, {ERROR: error});
         }
+        interaction.reply(jokeResponse);
     }
 }

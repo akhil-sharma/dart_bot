@@ -1,0 +1,25 @@
+{
+  "name": "dart_bot",
+  "version": "1.0.0",
+  "description": "A fun discord bot.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "lint": "eslint ."
+  },
+  "author": "Akhil Sharma",
+  "license": "MIT",
+  "dependencies": {
+    // "@discordjs/opus": "^0.3.2",
+    // "axios": "^0.21.2",
+    "discord.js": "^12.2.0",
+    "dotenv-flow": "^3.1.0",
+    // "simple-youtube-api": "^5.2.1",
+    // "ytdl-core-discord": "^1.2.0"
+  },
+  "devDependencies": {
+    "eslint": "^7.0.0",
+    "eslint-plugin-prettier": "^3.1.3"
+  }
+}

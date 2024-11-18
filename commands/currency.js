@@ -1,6 +1,7 @@
 const axios = require('axios');
-const constants =  require('../utils/constants');
+const {allowedCurrencySymbols} =  require('../utils/constants');
 const commonFunctions = require('../utils/common_functions');
+const {SlashCommandBuilder} = require('discord.js');
 const logging = require('../utils/logging');
 const handlerInfo = {
     commandModule: 'currency',
@@ -28,62 +29,63 @@ const formatCurrencyData = (currencyData, baseCurrency, newCurrency, amount) => 
 }
 
 module.exports = {
-    name: `currency`,
-    description: `This command converts any amount from one currency to another.`,
+    data: new SlashCommandBuilder()
+        .setName('currency')
+        .setDescription('This command converts any amount from one currency to another.')
+        .addStringOption(option => 
+            option.setName('currency-symbol-1')
+            .setDescription('The first currency symbol*')
+            .setRequired(true)
+        )
+        .addStringOption(option =>
+            option.setName('currency-symbol-2')
+            .setDescription('The second currency symbol')
+        ),
     cooldown: 4,
     args: true,
     aliases: ['price'],
-    usage: `<amount> <currency-symbol> <currency-symbol> (for currency conversion) or
+    usage: `!currency <amount> <currency-symbol> <currency-symbol> (for currency conversion) or
     !currency <currency-symbol> (for the full form)`,
-    async execute(message, args){
-        logging.trace(handlerInfo, {EVENT: `Fired \`currency\` command with args :: ${args}`});
+    async execute(interaction){
+        let baseCurrencySymbol = interaction.options.getString("currency-symbol-1");
+        let newCurrencySymbol = interaction.options.getString("currency-symbol-2") ?? null;
+        const amount = interaction.options.getNumber("amount") ?? 1;
+        
+        logging.trace(handlerInfo, {EVENT: `Fired \`currency\` command with args :: ${{baseCurrencySymbol}, {newCurrencySymbol}, {amount}}`});
+        
         try{
-            let baseCurrencySymbol = null;
-            let newCurrencySymbol = null;
-            let amount = 1;
             let responseString = ``;
-            let sentMessage = null;
             let currencyString = null;
-            switch (args.length){
-                case 1:
-                    baseCurrencySymbol = args[0].toUpperCase();
-                    currencyString = constants.allowedCurrencySymbols[baseCurrencySymbol];
-                    responseString = currencyString ? currencyString : `I don't recognize ${baseCurrencySymbol}... try another?`;
-                    return message.reply(responseString);
 
-                case 2:
-                    baseCurrencySymbol = args[0].toUpperCase();
-                    newCurrencySymbol = args[1].toUpperCase();
-                    break;
-
-                case 3:
-                    amount = parseInt(args[0]);
-                    baseCurrencySymbol = args[1].toUpperCase();
-                    newCurrencySymbol = args[2].toUpperCase();
-                    break;
-                
-                default:
-                    responseString = `Invalid arguments. 
-                    Try \`!currency <amount> <currency-symbol> <currency-symbol>\`
-                    or  \`!currency <currency-symbol> <currency-symbol>\` (for currency conversion) 
-                    and
-                    \`!currency <currency-symbol>\` (for the full form)`;
-                    sentMessage = await message.reply(responseString);
-                    return commonFunctions.clearInvalidCommand(message, sentMessage);
+            if (!newCurrencySymbol) {
+                // Only the base currency string is provided
+                currencyString = allowedCurrencySymbols[baseCurrencySymbol.toUpperCase()];
+                responseString = currencyString ? currencyString : `I don't recognize ${baseCurrencySymbol}... try another?`;
+                return interaction.reply(responseString);
             }
 
-            if(!constants.allowedCurrencySymbols[baseCurrencySymbol] || !constants.allowedCurrencySymbols[newCurrencySymbol]){
-                return message.reply("I don't recognize one of the currency symbols... try another?");
+            //     responseString = `Invalid arguments. 
+            //     Try \`!currency <amount> <currency-symbol> <currency-symbol>\`
+            //     or  \`!currency <currency-symbol> <currency-symbol>\` (for currency conversion) 
+            //     and
+            //     \`!currency <currency-symbol>\` (for the full form)`;
+            //     sentMessage = await message.reply(responseString);
+            //     return commonFunctions.clearInvalidCommand(message, sentMessage);
+            baseCurrencySymbol = baseCurrencySymbol.toUpperCase()
+            newCurrencySymbol = newCurrencySymbol.toUpperCase()
+
+            if(!allowedCurrencySymbols[baseCurrencySymbol] || !allowedCurrencySymbols[newCurrencySymbol]){
+                return interaction.reply("I don't recognize one of the currency symbols... try another?");
             }
 
             const currencyConversionUrl = buildCurrencyConversionUrl(baseCurrencySymbol, newCurrencySymbol);
             const response = await axios.get(currencyConversionUrl);
             responseString = formatCurrencyData(response.data, baseCurrencySymbol, newCurrencySymbol, amount);
-            return message.reply(responseString);
+            return interaction.reply(responseString);
             
         } catch(error){
             logging.error(handlerInfo, {EVENT: `Encountered error in \`currency\` command.`}, {ERROR: error});
-            message.reply(`I am unable to fetch this data...`);
+            interaction.reply(`I am unable to fetch this data...`);
         }
     }
 }

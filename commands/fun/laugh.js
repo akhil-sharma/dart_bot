@@ -1,12 +1,13 @@
-const LAUGH_STRING_ARRAY = [`Bwahahahahah!!`, `Bwahah!`, `heheh...`, `Hahahah!!!`, `Bwahah! That's funny!!`];
+const {SlashCommandBuilder} = require('discord.js');
 
+const { LAUGH_STRING_ARRAY } = require('../../utils/constants');
 module.exports = {
-    name: `xd`,
-    description: `This command sends a message with a random laugh when it encounters XD`,
-    execute(message){
-        let randomLaughter = LAUGH_STRING_ARRAY[Math.floor(Math.random() * LAUGH_STRING_ARRAY.length)];
-        message.channel.send(`${randomLaughter}`);
-        message.react('😄');
-        message.react('👍');
+    data: new SlashCommandBuilder()
+        .setName('xd')
+        .setDescription('This command sends a message with a random laugh when it encounters XD'),
+
+    async execute(interaction ){
+        const randomLaughter = LAUGH_STRING_ARRAY[Math.floor(Math.random() * LAUGH_STRING_ARRAY.length)];
+        interaction.reply(`${randomLaughter}`);
     }
 }

@@ -49,7 +49,7 @@
 | :-------| :---------------- | :------ | :-------|
 | `!ping` | Reply with `Pong!`| `!ping` | --      |
 | `!ding` | Reply with `Dong!`| `!ding` | --      |
-| `!beep` | Reply with `Boop!`| `!beep` | --      |
+
 
 
 ## **Resources**

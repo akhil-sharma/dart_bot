@@ -1,27 +1,25 @@
-const { MessageEmbed } = require("discord.js");
+const { EmbedBuilder, SlashCommandBuilder } = require("discord.js");
 const PREFIX = process.env.PREFIX;
 
-
 module.exports = {
-  name: "help",
-  description: "Display all commands and descriptions",
-  execute(message) {
-    let commands = message.client.commands.array();
+  data: new SlashCommandBuilder()
+    .setName('help')
+    .setDescription('Display all commands and their descriptions.'),
+  
+  async execute(interaction) {
+    let commands =  [...interaction.client.commands.values()]
     
-    let helpEmbed = new MessageEmbed()
+    let helpEmbed = new EmbedBuilder()
     .setTitle("Help")
     .setDescription("List of all commands")
-    .setColor("#F8AA2A");
+    .setColor("#F8AA2A")
 
     commands.forEach(cmd => {
-      helpEmbed.addField(
-        `${PREFIX}${cmd.name}`,
-        `${cmd.description}`
-      );
+      helpEmbed.addFields({ name: `${PREFIX}${cmd.data.name}`, value: `${cmd.data.description}`});
     });
 
     helpEmbed.setTimestamp();
 
-    return message.channel.send(helpEmbed);
+    return interaction.reply({embeds: [helpEmbed]});
   }
 };

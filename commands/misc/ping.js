@@ -1,9 +1,10 @@
-const PING_REPLY = 'Pong!';
+const { SlashCommandBuilder } = require('discord.js')
 
 module.exports = {
-    name: 'ping',
-    description: `This command sends a message with content ${PING_REPLY} when it encounters ping`,
-    execute(message){
-        message.channel.send(`${PING_REPLY}`);
+    data: new SlashCommandBuilder()
+        .setName('ping')
+        .setDescription('Replies with a Pong!'),
+    async execute(interaction) {
+        await interaction.reply("Pong!");
     }
 }

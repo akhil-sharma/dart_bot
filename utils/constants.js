@@ -169,6 +169,9 @@ const allowedCurrencySymbols = {
     ZWL: "Zimbabwean Dollar"
 };
 
+const LAUGH_STRING_ARRAY = [`Bwahahahahah!!`, `Bwahah!`, `heheh...`, `Hahahah!!!`, `Bwahah! That's funny!!`];
+
 module.exports = {
-    allowedCurrencySymbols
+    allowedCurrencySymbols,
+    LAUGH_STRING_ARRAY
 };

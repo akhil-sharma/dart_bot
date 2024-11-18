@@ -1,5 +1,5 @@
 const axios = require('axios');
-const Discord = require('discord.js');
+const {EmbedBuilder, SlashCommandBuilder} = require('discord.js');
 
 const logging = require(`../utils/logging`);
 const handlerInfo = {
@@ -41,47 +41,50 @@ const generateEmbed = (weatherData) => {
 
     let { main, description, icon } = weather[0];
     
-    let weatherEmbed = new Discord.MessageEmbed()
+    let weatherEmbed = new EmbedBuilder()
         .setColor('#0099ff')
         .setTitle(`${main}, ${temp}°C`)
         .setURL(`${buildCityUrl(name)}`)
-        .setAuthor(`${name}`)
         .setDescription(`${description}`)
         .setThumbnail(`${buildWeatherIconUrl(icon)}`)
-        .addField(`Range`, `\u2193 ${temp_min}°C  \u200B \u200B \u200B \u200B \u2191 ${temp_max}°C`)
-        .addFields(
+        .addFields({name: "Overview", value: `Range \u2193 ${temp_min}°C  \u200B \u200B \u200B \u200B \u2191 ${temp_max}°C`})
+        .addFields([
             {name: `Feels Like`, value: `${feels_like}°C`, inline: true},
             {name: `Humidity`, value: `${humidity}%`, inline: true},
-            {name: `Pressure`, value: `${pressure} hpa`, inline: true},
-        )
-        .addField(`Wind Speed`, `${speed} m/s ${getWindDirection(deg)} ${deg}°`)
-        .addField('\u200B', '\u200B' )
+            {name: `Pressure`, value: `${pressure} hpa`, inline: true}
+        ])
+        .addFields({name: `Wind Speed`, value: `${speed} m/s ${getWindDirection(deg)} ${deg}°`})
+        .addFields({name: '\u200B', value: '\u200B'})
         .setTimestamp()
-        .setFooter(`Created for ${createdFor}`);
-    
+        .setFooter({text: `Created for ${createdFor}`});
+        
     return weatherEmbed;
 }
 
 module.exports = {
-    name: `weather`,
+    data: new SlashCommandBuilder()
+        .setName('weather')
+        .setDescription('This command gives sends weather details of a given location')
+        .addStringOption(option => 
+            option.setName('city')
+                .setDescription('Name of the city')
+                .setRequired(true)
+        ),
     args: true,
     cooldown: 5,
-    usage: '<city>',
-    description: `This command gives sends weather details of a given location`,
-    async execute(message, args){
-        logging.trace(handlerInfo, {EVENT: `\`weather\` command fired with args :: &{args}`});
+    usage: '!weather <city>',
+    async execute(interaction){
+        const city = interaction.options.getString('city');
+        logging.trace(handlerInfo, {EVENT: `\`weather\` command fired with args :: ${city}`});
         try {
-            let cityName = args.join(' ');
-
-            let weatherUrl = buildWeatherUrl(cityName);
+            let weatherUrl = buildWeatherUrl(city);
             let weatherResponse = await axios.get(weatherUrl);
-            let weatherData = generateEmbed({...weatherResponse.data, createdFor: message.author.username});
-
-            message.channel.send(weatherData);
+            let weatherData = generateEmbed({...weatherResponse.data, createdFor: interaction.user.username});
+            interaction.reply({ embeds: [weatherData] });
 
         } catch (error) {
-            console.error(error);
-            message.reply(`Ummm... I seem to be having some trouble finding the weather for this location.`);
+            logging.trace(handlerInfo, {EVENT: `\`weather\` command fired with args :: ${city}`}, {ERROR: error});
+            interaction.reply(`Ummm... I seem to be having some trouble finding the weather for this location.`);
         }
     }
 }
