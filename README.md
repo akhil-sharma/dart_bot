@@ -24,7 +24,7 @@
 >### *CURRENCY*
 | COMMAND    | DESCRIPTION  | USAGE  | ALIASES |
 | :-------   | :----------- | :----- | :-------|
-| `/currency`| Convert any amount from one currency to another. | `/currency <amount> <currency-symbol> <currency-symbol>` | `/price` |
+| `/currency`| Convert any amount from one currency to another. | `/currency <amount> <currency-symbol> <currency-symbol>` | -- |
 |            | Converting unit amount.                          | `/currency <currency-symbol> <currency-symbol>` |
 |            | Display the currency for symbol.                 | `/currency <currency-symbol>` |
 
@@ -40,7 +40,7 @@
 | COMMAND | DESCRIPTION       | USAGE   | ALIASES |
 | :-------| :---------------- | :------ | :-------|
 | `/ping` | Reply with `Pong!`| `/ping` | --      |
-| `/ding` | Reply with `Dong!`| `/ding` | --      |
+| `/user` | Provides information about the user. | `/user` | --      |
 
 >### *MUSIC* (Under Maintainance)
 
