@@ -1,7 +1,8 @@
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 
 const ytdl = require('ytdl-core-discord');
-const { MessageEmbed } = require('discord.js');
+// const { interactionEmbed } = require('discord.js');
+const { SlashCommandBuilder } = require('discord.js');
 const Youtube = require('simple-youtube-api');
 const youtube = new Youtube(YOUTUBE_API_KEY);
 
@@ -13,28 +14,34 @@ const handlerInfo = {
 };
 
 module.exports = {
-    name: `play`,
-    description: `Play a song or a playlist form Youtube. Use a link or just search by name.`,
-    args: true,
+    data: new SlashCommandBuilder()
+        .setName('play')
+        .setDescription('Play a song or a playlist form Youtube. Use a link or just search by name')
+        .addStringOption(option => 
+            option.setName('youtube-media')
+            .setDescription('Name of the song, youtube video url or youtube-playlist-url')
+            .setRequired(true)
+        ),
     cooldown: 5,
     guildOnly: true,
     aliases: ['p'],
     usage: `<song-name> or <youtube-url> or <youtube-playlist-url>`,
-    async execute(message, args) {
-        logging.trace(handlerInfo, {EVENT: `\`play\` command fired with args :: ${args}`});
+    async execute(interaction) {
+        const queryString = interaction.options.getString("youtube-media") ?? "";
+        logging.trace(handlerInfo, {EVENT: `\`play\` command fired with args :: ${queryString}`});
 
-        const voiceChannel = message.member.voice.channel;
+        const voiceChannel = interaction.member.voice.channel;
         if(!voiceChannel){
             let responseString = `You need to be in a voice channel to play music.`;
             logging.trace(handlerInfo, responseString);
-            return message.channel.send(responseString);
+            return interaction.channel.send(responseString);
         }
 
-        const permissions = voiceChannel.permissionsFor(message.client.user);
+        const permissions = voiceChannel.permissionsFor(interaction.client.user);
         if(!permissions.has('CONNECT') || !permissions.has('SPEAK')){
             let responseString = `I need permission to join and speak in your voice channel.`;
             logging.trace(handlerInfo, responseString);
-            return message.channel.send(responseString);
+            return interaction.channel.send(responseString);
         }
 
         // Any new song will be push into this array before adding to the guildSongQueue
@@ -47,11 +54,11 @@ module.exports = {
             //check for playlist url 
             if (queryString.match(/^(?!.*\?.*\bv=)https:\/\/www\.youtube\.com\/.*\?.*\blist=.*$/)){
                 const playlist = await youtube.getPlaylist(queryString).catch(function() {
-                    return message.channel.send(`Playlist is either private or it does not exist!`);
+                    return interaction.channel.send(`Playlist is either private or it does not exist!`);
                 });
 
                 const videosObj = await playlist.getVideos(30).catch(function() {
-                    return message.channel.send(`There was a problem getting one of the videos in the playlist!`);
+                    return interaction.channel.send(`There was a problem getting one of the videos in the playlist!`);
                 });
 
                 for (let i = 0; i < videosObj.length; i++) {
@@ -69,7 +76,7 @@ module.exports = {
                   .split(/(vi\/|v=|\/v\/|youtu\.be\/|\/embed\/)/);
                 const id = queryString[2].split(/[^0-9a-z_\-]/i)[0];
                 const video = await youtube.getVideoByID(id).catch(function() {
-                    return message.channel.send(`There was a problem getting the video you provided!`);
+                    return interaction.channel.send(`There was a problem getting the video you provided!`);
                 });
 
                 newSongsArray.push(
@@ -79,10 +86,10 @@ module.exports = {
             // search for video by name
             else {
                 const videos = await youtube.searchVideos(queryString, 5).catch(function() {
-                    return message.channel.send(`There was a problem searching the video you requested :(`);
+                    return interaction.channel.send(`There was a problem searching the video you requested :(`);
                 });
                 if (videos.length < 5) {
-                    return message.channel.send(`I had some trouble finding what you were looking for, please try again or be more specific`);
+                    return interaction.channel.send(`I had some trouble finding what you were looking for, please try again or be more specific`);
                 }
 
                 const videoArray = [];
@@ -91,7 +98,7 @@ module.exports = {
                 }
                 videoArray.push('exit');
                 
-                const embed = new MessageEmbed()
+                const embed = new interactionEmbed()
                     .setColor('#e9f931')
                     .setTitle('Choose a song by commenting a number between 1 and 5')
                     .addField('Song 1', videoArray[0])
@@ -100,9 +107,9 @@ module.exports = {
                     .addField('Song 4', videoArray[3])
                     .addField('Song 5', videoArray[4])
                     .addField('Exit', videoArray[5]);
-                let songEmbed = await message.channel.send({ embed });
+                let songEmbed = await interaction.channel.send({ embed });
 
-                let userResponse = await message.channel.awaitMessages(
+                let userResponse = await interaction.channel.awaitinteractions(
                     (msg) => {
                         return (msg.content > 0 && msg.content < 6) || msg.content === 'exit';
                     },
@@ -117,7 +124,7 @@ module.exports = {
                     if (songEmbed) {
                         songEmbed.delete();
                     }
-                    return message.channel.send('Please try again and enter a number between 1 and 5 or exit');
+                    return interaction.channel.send('Please try again and enter a number between 1 and 5 or exit');
                 });
 
                 if (userResponse.first().content === 'exit') {
@@ -134,13 +141,13 @@ module.exports = {
                     if (songEmbed) {
                         songEmbed.delete();
                     }
-                    return message.channel.send('An error has occured when trying to get the video ID from youtube');
+                    return interaction.channel.send('An error has occured when trying to get the video ID from youtube');
 
                 });
 
                 if (video.duration.hours !== 0) {
                     songEmbed.delete();
-                    return message.say('I cannot play videos longer than 1 hour');
+                    return interaction.say('I cannot play videos longer than 1 hour');
                 }
 
                 newSongsArray.push(
@@ -152,14 +159,14 @@ module.exports = {
                 }
             }
 
-            const serverQueue = message.client.serverQueue;
-            const guildSongQueue = serverQueue.get(message.guild.id);
+            const serverQueue = interaction.client.serverQueue;
+            const guildSongQueue = serverQueue.get(interaction.guild.id);
 
             if(!guildSongQueue){
                 //creating a new queue for songs
 
                 const queueConstruct = {
-                    textChannel: message.channel,
+                    textChannel: interaction.channel,
                     voiceChannel: voiceChannel,
                     connection: null,
                     songs: [],
@@ -170,7 +177,7 @@ module.exports = {
                     looping: false
                 };
 
-                serverQueue.set(message.guild.id, queueConstruct);
+                serverQueue.set(interaction.guild.id, queueConstruct);
                 
                 queueConstruct.songs = [...queueConstruct.songs, ...newSongsArray];
                 logging.trace(handlerInfo, {EVENT: `queueConstruct.songs populated :: queueConstruct.song.length :: ${queueConstruct.songs.length}`})
@@ -178,12 +185,12 @@ module.exports = {
                 try{
                     const connection = await voiceChannel.join();
                     queueConstruct.connection = connection;
-                    play(message, queueConstruct.songs[0]);
+                    play(interaction, queueConstruct.songs[0]);
                 
                 } catch (error){
                     logging.error(handlerInfo, {EVENT: `\`play\` method was called on new queueConstruct.songs array :: song :: ${queueConstruct.songs[0].title}`}, {ERROR: error});
-                    serverQueue.delete(message.guild.id);
-                    return message.channel.send(`Ummm... Try again?`);
+                    serverQueue.delete(interaction.guild.id);
+                    return interaction.channel.send(`Ummm... Try again?`);
                 }
             }else { 
                 //Adding songs to a guildSongQueue.songs array.
@@ -191,7 +198,7 @@ module.exports = {
                 guildSongQueue.songs = [...guildSongQueue.songs, ...newSongsArray];
                 logging.trace(handlerInfo, {EVENT: `guildSongQueue.songs populated :: new guildSongQueue.songs.length :: ${guildSongQueue.songs.length}`});
 
-                const newSongsQueueEmbed = new MessageEmbed()
+                const newSongsQueueEmbed = new interactionEmbed()
                     .setColor(`#ff7373`)
                     .setTitle(`New Song${newSongsArray.length > 1 ? "s" : ""} added to the queue\n`);
                 let counter = 1;
@@ -199,12 +206,12 @@ module.exports = {
                     newSongsQueueEmbed.addField(`${counter}:`, `${song.title} : ${song.duration}`);
                     counter += 1;
                 });
-                return message.channel.send(newSongsQueueEmbed);
+                return interaction.channel.send(newSongsQueueEmbed);
             }
 
         } catch (error) {
             logging.error(handlerInfo, {EVENT: `Caught error in \`play\` command.`}, {ERROR: error});
-            message.channel.send(`Something went wrong...`);
+            interaction.channel.send(`Something went wrong...`);
         }       
     }
 }
@@ -222,11 +229,11 @@ const createSongObject = (video, voiceChannel) => {
     };
 }
 
-const play = async (message, song) => {
+const play = async (interaction, song) => {
     logging.trace(handlerInfo, {EVENT: `play method called for song :: ${song.title}`});
     
-    const serverQueue = message.client.serverQueue;
-    const guildSongQueue = serverQueue.get(message.guild.id);
+    const serverQueue = interaction.client.serverQueue;
+    const guildSongQueue = serverQueue.get(interaction.guild.id);
 
     try {
 
@@ -242,7 +249,7 @@ const play = async (message, song) => {
             dispatcher.setVolumeLogarithmic(guildSongQueue.volume / 100);
             guildSongQueue.dispatcher = dispatcher;
             
-            const videoEmbed = new MessageEmbed()
+            const videoEmbed = new interactionEmbed()
               .setThumbnail(guildSongQueue.songs[0].thumbnail)
               .setColor('#e9f931')
               .addField('Now Playing:', guildSongQueue.songs[0].title)
@@ -252,7 +259,7 @@ const play = async (message, song) => {
             guildSongQueue.playing = true;
             guildSongQueue.nowPlaying = guildSongQueue.songs[0];
 
-            return message.channel.send(videoEmbed);
+            return interaction.channel.send(videoEmbed);
         });
         
         dispatcher.on('finish', () => {
@@ -267,16 +274,16 @@ const play = async (message, song) => {
                 //Add current song to the end of queue
                 let lastSong = guildSongQueue.songs.shift();
                 guildSongQueue.songs.push(lastSong);
-                return play(message, guildSongQueue.songs[0]);
+                return play(interaction, guildSongQueue.songs[0]);
             }
             else if(guildSongQueue.songs[1]){
                 guildSongQueue.songs.shift();
-                return play(message, guildSongQueue.songs[0]);
+                return play(interaction, guildSongQueue.songs[0]);
             
             }else{
                 guildSongQueue.voiceChannel.leave();
-                serverQueue.delete(message.guild.id);
-                return message.channel.send(`No more songs left to play...`);
+                serverQueue.delete(interaction.guild.id);
+                return interaction.channel.send(`No more songs left to play...`);
             }
         });
 
@@ -286,8 +293,8 @@ const play = async (message, song) => {
 
         dispatcher.on('error', err => {
             logging.error(handlerInfo, {EVENT: `Fired \`error\` for ${guildSongQueue.nowPlaying.title}`}, {ERROR: err});
-            message.guild.me.voice.channel.leave();
-            return serverQueue.delete(message.guild.id);
+            interaction.guild.me.voice.channel.leave();
+            return serverQueue.delete(interaction.guild.id);
         });
 
     } catch (err) {
@@ -295,7 +302,7 @@ const play = async (message, song) => {
         if(guildSongQueue && guildSongQueue.voiceChannel){
             guildSongQueue.voiceChannel.leave();
         }
-        return serverQueue.delete(message.guild.id);
+        return serverQueue.delete(interaction.guild.id);
     }
 
 }

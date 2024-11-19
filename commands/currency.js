@@ -40,6 +40,10 @@ module.exports = {
         .addStringOption(option =>
             option.setName('currency-symbol-2')
             .setDescription('The second currency symbol')
+        )
+        .addNumberOption(option => 
+            option.setName('amount')
+            .setDescription('The amount of currency')
         ),
     cooldown: 4,
     args: true,
@@ -64,13 +68,6 @@ module.exports = {
                 return interaction.reply(responseString);
             }
 
-            //     responseString = `Invalid arguments. 
-            //     Try \`!currency <amount> <currency-symbol> <currency-symbol>\`
-            //     or  \`!currency <currency-symbol> <currency-symbol>\` (for currency conversion) 
-            //     and
-            //     \`!currency <currency-symbol>\` (for the full form)`;
-            //     sentMessage = await message.reply(responseString);
-            //     return commonFunctions.clearInvalidCommand(message, sentMessage);
             baseCurrencySymbol = baseCurrencySymbol.toUpperCase()
             newCurrencySymbol = newCurrencySymbol.toUpperCase()
 
